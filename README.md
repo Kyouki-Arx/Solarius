@@ -147,8 +147,7 @@ Notes on the harness:
 
 The cursor handling in `src/ddnet_input.*` re-implements DDNet's model
 (`inp_mousesens`, `cl_mouse_max_distance`, `ClampMousePos`) against
-[DDNet](https://github.com/ddnet/ddnet). The original project is neither
-modified nor vendored; the formulas are reimplemented in Godot units.
+[DDNet](https://github.com/ddnet/ddnet). The formulas are reimplemented in Godot units.
 
 ## License
 
