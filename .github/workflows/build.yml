@@ -91,11 +91,13 @@ jobs:
         if: matrix.artifact == 'solarius-windows-x86_32'
         shell: msys2 {0}
         run: |
-          pacman -S --noconfirm --needed mingw-w64-i686-python
-          C:/msys64/mingw32/bin/python -m pip install --quiet scons
+          set -euo pipefail
+          # SCons itself is platform-agnostic, so the 64-bit Python already on
+          # PATH runs it; only the compiler must be the 32-bit one, which is
+          # what putting MINGW32/bin first on PATH arranges.
           cd "$GITHUB_WORKSPACE"
-          C:/msys64/mingw32/bin/scons \
-            platform=windows target=template_release arch=x86_32 -j4
+          scons platform=windows target=template_release arch=x86_32 -j4
+          test -f "bin/${{ matrix.gdext_lib }}"
 
       - name: Build GDExtension library
         if: matrix.artifact != 'solarius-windows-x86_32'
