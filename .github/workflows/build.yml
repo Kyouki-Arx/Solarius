@@ -18,18 +18,22 @@ jobs:
             artifact: solarius-windows-x86_64
             preset: Windows Desktop
             gdext_lib: libaimtrainer.windows.template_release.x86_64.dll
+            export_name: Solarius.exe
           - os: windows-latest
             artifact: solarius-windows-x86_32
             preset: Windows Desktop 32-bit
             gdext_lib: libaimtrainer.windows.template_release.x86_32.dll
+            export_name: Solarius.exe
           - os: ubuntu-latest
             artifact: solarius-linux-x86_64
             preset: Linux/X11
             gdext_lib: libaimtrainer.linux.template_release.x86_64.so
+            export_name: solarius.x86_64
           - os: macos-latest
             artifact: solarius-macos-x86_64
             preset: macOS
             gdext_lib: libaimtrainer.macos.template_release.x86_64.dylib
+            export_name: Solarius.zip
 
     defaults:
       run:
@@ -93,22 +97,21 @@ jobs:
         run: |
           set -euo pipefail
           # This image already has a 64-bit MinGW at C:\mingw64 which wins on
-          # PATH, and setup-msys2 does not necessarily install to C:\msys64, so
-          # locate the i686 toolchain rather than assuming a path.
-          i686_gxx="$(ls -1 /c/msys64/mingw32/bin/g++.exe \
-                          /c/msys64/mingw32/bin/g++ 2>/dev/null | head -1 || true)"
-          if [ -z "$i686_gxx" ]; then
-            i686_gxx="$(find /c -maxdepth 5 -path '*/mingw32/bin/g++' -print -quit 2>/dev/null || true)"
-          fi
-          echo "i686 g++: $i686_gxx"
+          # PATH, and setup-msys2 does not install to C:\msys64 by default, so
+          # find the i686 toolchain wherever it actually landed.
+          i686_gxx="$(find / -maxdepth 6 -type f -name 'g++.exe' -path '*mingw32*' \
+                       -print -quit 2>/dev/null || true)"
+          echo "i686 g++: ${i686_gxx:-<not found>}"
           test -n "$i686_gxx"
           "$i686_gxx" -dumpmachine
           test "$("$i686_gxx" -dumpmachine)" = "i686-w64-mingw32"
           # PATH must prefer it, because godot-cpp calls mingw.generate() on
           # win32, which re-resolves CC/CXX from PATH and ignores scons' own.
           i686_bin="$(dirname "$i686_gxx")"
-          export PATH="$i686_bin:$PATH"
+          export PATH="$(cygpath -w "$i686_bin"):$PATH"
           command -v g++
+          g++ -dumpmachine
+          test "$(g++ -dumpmachine)" = "i686-w64-mingw32"
           scons platform=windows target=template_release arch=x86_32 use_mingw=yes -j4
           test -f "bin/${{ matrix.gdext_lib }}"
 
@@ -125,12 +128,24 @@ jobs:
           esac
           test -f "bin/${{ matrix.gdext_lib }}" || { echo "missing GDExtension library bin/${{ matrix.gdext_lib }}"; exit 1; }
 
+      - name: Build host-arch library for the export editor
+        if: matrix.artifact == 'solarius-macos-x86_64'
+        shell: bash
+        run: |
+          set -euo pipefail
+          # The export runs a Godot *editor* binary, which reports the host's
+          # arch and the `debug` feature, so the manifest's macos.debug.<arch> row
+          # has to resolve or the editor aborts before exporting. Build it.
+          scons platform=macos target=template_debug -j4
+          ls -la bin/
+
       - name: Export standalone build
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p build
-          godot --headless --path . --export-release "${{ matrix.preset }}" "build/${{ matrix.artifact }}"
+          godot --headless --path . --export-release "${{ matrix.preset }}" \
+            "build/${{ matrix.export_name }}"
           ls -la build/
 
       - name: Package
