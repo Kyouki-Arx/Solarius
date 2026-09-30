@@ -132,8 +132,11 @@ jobs:
           set -euo pipefail
           # The export runs a Godot *editor* binary, which reports the host's
           # arch and the `debug` feature, so the manifest's macos.debug.<arch> row
-          # has to resolve or the editor aborts before exporting. Build it.
-          scons platform=macos target=template_debug -j4
+          # has to resolve or the editor aborts before exporting. The host here is
+          # Apple Silicon, and scons would otherwise default to `universal`, so
+          # build both arches explicitly.
+          scons platform=macos target=template_debug arch=arm64 -j4
+          scons platform=macos target=template_debug arch=x86_64 -j4
           ls -la bin/
 
       - name: Export standalone build
