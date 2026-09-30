@@ -89,13 +89,15 @@ jobs:
 
       - name: Compile 32-bit library
         if: matrix.artifact == 'solarius-windows-x86_32'
-        shell: msys2 {0}
+        shell: bash
         run: |
           set -euo pipefail
-          # SCons itself is platform-agnostic, so the 64-bit Python already on
-          # PATH runs it; only the compiler must be the 32-bit one, which is
-          # what putting MINGW32/bin first on PATH arranges.
-          cd "$GITHUB_WORKSPACE"
+          # SCons and Python are the runner's 64-bit ones, already on PATH; only
+          # the compiler has to be the 32-bit build, so the i686 toolchain goes
+          # in front. Running this from bash rather than the msys2 shell keeps
+          # scons resolvable, which it is not from inside msys2.
+          export PATH="/c/msys64/mingw32/bin:$PATH"
+          g++ -dumpmachine
           scons platform=windows target=template_release arch=x86_32 -j4
           test -f "bin/${{ matrix.gdext_lib }}"
 
