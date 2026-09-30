@@ -30,9 +30,9 @@ jobs:
             gdext_lib: libaimtrainer.linux.template_release.x86_64.so
             export_name: solarius.x86_64
           - os: macos-latest
-            artifact: solarius-macos-x86_64
+            artifact: solarius-macos-universal
             preset: macOS
-            gdext_lib: libaimtrainer.macos.template_release.x86_64.dylib
+            gdext_lib: libaimtrainer.macos.template_release.universal.dylib
             export_name: Solarius.zip
 
     defaults:
@@ -120,21 +120,23 @@ jobs:
           case "${{ matrix.artifact }}" in
             solarius-windows-x86_64) scons platform=windows target=template_release use_mingw=yes -j4 ;;
             solarius-linux-x86_64)   scons platform=linux   target=template_release arch=x86_64 -j4 ;;
-            solarius-macos-x86_64)   scons platform=macos   target=template_release arch=x86_64 -j4 ;;
+            # Godot 4.3 ships a single universal macOS template, so the app can
+            # only be exported as universal; the dylib has to match or the
+            # loader looks for an arch the bundle does not have.
+            solarius-macos-universal) scons platform=macos   target=template_release arch=universal -j4 ;;
             *) echo "unknown artifact ${{ matrix.artifact }}"; exit 1 ;;
           esac
           test -f "bin/${{ matrix.gdext_lib }}" || { echo "missing GDExtension library bin/${{ matrix.gdext_lib }}"; exit 1; }
 
       - name: Build host-arch library for the export editor
-        if: matrix.artifact == 'solarius-macos-x86_64'
+        if: matrix.artifact == 'solarius-macos-universal'
         shell: bash
         run: |
           set -euo pipefail
           # The export runs a Godot *editor* binary, which reports the host's
           # arch and the `debug` feature, so the manifest's macos.debug.<arch> row
           # has to resolve or the editor aborts before exporting. The host here is
-          # Apple Silicon, and scons would otherwise default to `universal`, so
-          # build both arches explicitly.
+          # Apple Silicon, so build both arches.
           scons platform=macos target=template_debug arch=arm64 -j4
           scons platform=macos target=template_debug arch=x86_64 -j4
           ls -la bin/
