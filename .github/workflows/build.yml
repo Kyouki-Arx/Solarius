@@ -97,14 +97,18 @@ jobs:
           # i686 binaries. The default g++ staying x86_64 is the whole reason for
           # the override, so verify the compiler SCons will actually call.
           i686_gxx=/c/msys64/mingw32/bin/g++.exe
+          {
+            echo "i686_gxx=$i686_gxx"
+            ls -l "$i686_gxx" || true
+            "$i686_gxx" -dumpmachine || true
+          } 2>&1
           test -x "$i686_gxx"
-          "$i686_gxx" -dumpmachine
           test "$("$i686_gxx" -dumpmachine)" = "i686-w64-mingw32"
           scons platform=windows target=template_release arch=x86_32 use_mingw=yes \
             CC=/c/msys64/mingw32/bin/gcc.exe \
             CXX="$i686_gxx" \
             LINK="$i686_gxx" \
-            -j4
+            -j4 2>&1 | tail -40
           test -f "bin/${{ matrix.gdext_lib }}"
 
       - name: Build GDExtension library
