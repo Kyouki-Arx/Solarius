@@ -1,0 +1,3 @@
+[gd_scene format=3 uid="uid://b8qaimtrainer1"]
+
+[node name="AimTrainer" type="AimTrainer"]

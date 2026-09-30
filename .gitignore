@@ -1,0 +1,28 @@
+# --- build output -----------------------------------------------------------
+bin/
+*.o
+*.os
+*.obj
+*.a
+*.lib
+*.exp
+*.dll
+*.so
+*.dylib
+*.pdb
+.sconsign.dblite
+.scons_env/
+*.exe
+
+# --- Godot ------------------------------------------------------------------
+.godot/
+*.translation
+export_presets.cfg
+export/
+
+# --- editors / OS -----------------------------------------------------------
+.vscode/
+.idea/
+*.swp
+Thumbs.db
+desktop.ini
