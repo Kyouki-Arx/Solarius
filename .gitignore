@@ -1,5 +1,7 @@
 # --- build output -----------------------------------------------------------
 bin/
+build/
+dist/
 *.o
 *.os
 *.obj
@@ -9,10 +11,14 @@ bin/
 *.dll
 *.so
 *.dylib
+*.framework/
 *.pdb
 .sconsign.dblite
 .scons_env/
 *.exe
+*.pck
+*.zip
+*.tar.gz
 
 # --- Godot ------------------------------------------------------------------
 .godot/

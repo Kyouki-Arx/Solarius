@@ -39,6 +39,10 @@ pip install scons
 scons platform=windows target=template_release -j8
 scons platform=windows target=template_debug   -j8
 
+# 32-bit (needs an i686-capable toolchain, see Platform notes)
+scons platform=windows target=template_release arch=x86_32 -j8
+scons platform=linux   target=template_release arch=x86_32 -j8
+
 # Linux
 scons platform=linux target=template_release -j8
 scons platform=linux target=template_debug   -j8
@@ -79,31 +83,48 @@ Export a standalone build:
 #   Linux:   ~/.local/share/godot/export_templates/4.3.stable/
 #   macOS:   ~/Library/Application Support/Godot/export_templates/4.3.stable/
 
-godot --headless --path . --export-release "Windows Desktop" build/Solarius.exe
-godot --headless --path . --export-release "Linux/X11"      build/Solarius.x86_64
-godot --headless --path . --export-release "macOS"          build/Solarius.zip
+godot --headless --path . --export-release "Windows Desktop"        build/Solarius.exe
+godot --headless --path . --export-release "Windows Desktop 32-bit" build/Solarius-x86_32.exe
+godot --headless --path . --export-release "Linux/X11"             build/Solarius.x86_64
+godot --headless --path . --export-release "macOS"                 build/Solarius.zip
 ```
 
-Export presets are **not** committed (`export_presets.cfg` is git-ignored),
-because they bake in absolute paths and machine-specific settings. Create them
-once in the editor via `Project → Export`, or write your own file — the presets
-only need to include `bin/*` as additional files.
+A working `export_presets.cfg` is committed, so these run as-is on a fresh
+clone. It is still listed in `.gitignore` in case you prefer to keep
+machine-specific presets untracked — if you edit it, use
+`git add -f export_presets.cfg` so the release CI keeps working. The presets
+only need `bin/*` included as additional files.
 
 ## Platform notes
 
-### 32-bit desktop is not possible
+### 32-bit desktop is possible
 
-Godot 4 dropped support for x86 and 32-bit ARM at the 4.0 release. There is no
-`windows_x86_32` export template for any Godot 4 version, so a 32-bit build of
-this project cannot be produced by any means. This is an upstream decision, not
-a limitation of this codebase.
+Godot 4 still ships 32-bit desktop export templates. `4.3.stable` includes
+`windows_release_x86_32.exe`, `windows_debug_x86_32.exe`,
+`linux_release.x86_32` and `linux_debug.x86_32`, so 32-bit Windows and Linux
+builds of this project can be produced. (An earlier revision of this document
+claimed upstream had dropped 32-bit in 4.0; that was wrong.)
 
-### Cross-compiling is not supported
+What is gone since Godot 3 is 32-bit **ARM** (`arm32`) Windows, which is why
+`arm64` entries here have no 32-bit counterpart.
 
-Godot's export templates are not cross-compilers. Exporting a Linux binary
-requires running Godot on Linux; the same applies to macOS. MinGW on Windows can
-technically produce Linux binaries, but Godot has no supported path for it, so
-build on the target OS instead.
+Two practical notes for 32-bit:
+
+- The 32-bit library must be built with a 32-bit-capable toolchain. A
+  x86_64-only MinGW install can *compile* 32-bit objects but cannot *link*
+  them, because the 32-bit CRT import libraries are missing. MSYS2's
+  `mingw-w64-i686-gcc` (or any standalone i686 MinGW build) is required.
+- `arch=x86_32` in the scons command selects it; the output lands in
+  `bin/libaimtrainer.<platform>.template_<target>.x86_32.<ext>`.
+
+### Cross-compiling
+
+Godot's export templates are prebuilt binaries for one OS, not cross-compilers,
+so an exported *game* must be produced on its target OS. The **GDExtension
+library**, however, is ordinary C++ and cross-compiles freely — the Linux
+`.so` and macOS dylib in `bin/` can be built from any host with a suitable
+cross-toolchain. Building the library everywhere and exporting per-OS is the
+workflow `.github/workflows/build.yml` automates.
 
 ### macOS specifics
 

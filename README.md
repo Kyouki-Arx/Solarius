@@ -97,15 +97,19 @@ Get-Process godot | ForEach-Object { $_.Modules } |
 
 ## Downloads
 
-Prebuilt binaries are attached to the Releases page. The Windows 64-bit package
-is a self-contained folder — extract it anywhere and run `Solarius.exe`.
+Prebuilt binaries are attached to the Releases page. The Windows package is a
+self-contained folder — extract it anywhere and run `Solarius.exe`.
 
-Godot 4 has **no 32-bit desktop builds**: upstream dropped x86 and 32-bit ARM
-support in 4.0, and no export template for them exists. 32-bit Windows is
-therefore not available in any form, for this or any other Godot 4 project.
+Windows and Linux are built for both x86_64 and x86_32. Godot 4 still ships
+32-bit desktop export templates, so both architectures are available. What was
+dropped in 4.0 is 32-bit **ARM** (`arm32`) Windows, so `arm64` has no 32-bit
+counterpart.
 
-Cross-compiling desktop builds is also not supported by Godot. The source here is
-portable; build it on the target OS with the commands above.
+An exported game must be built on its target OS, because Godot's export
+templates are prebuilt binaries rather than cross-compilers. The source is
+portable; see [BUILDING.md](BUILDING.md) for per-OS commands. Tagged pushes run
+`.github/workflows/build.yml`, which builds and exports all four targets and
+attaches them to the release automatically.
 
 ## Layout
 

@@ -6,5 +6,19 @@ reloadable = true
 
 [libraries]
 
+; Every architecture this project can be built for is listed, so a checkout with
+; several builds in bin/ works on any of them. Godot picks the row matching the
+; running binary; a missing file is simply skipped.
+
 windows.debug.x86_64 = "res://bin/libaimtrainer.windows.template_debug.x86_64.dll"
 windows.release.x86_64 = "res://bin/libaimtrainer.windows.template_release.x86_64.dll"
+windows.debug.x86_32 = "res://bin/libaimtrainer.windows.template_debug.x86_32.dll"
+windows.release.x86_32 = "res://bin/libaimtrainer.windows.template_release.x86_32.dll"
+
+linux.debug.x86_64 = "res://bin/libaimtrainer.linux.template_debug.x86_64.so"
+linux.release.x86_64 = "res://bin/libaimtrainer.linux.template_release.x86_64.so"
+linux.debug.x86_32 = "res://bin/libaimtrainer.linux.template_debug.x86_32.so"
+linux.release.x86_32 = "res://bin/libaimtrainer.linux.template_release.x86_32.so"
+
+macos.debug = "res://bin/libaimtrainer.macos.template_debug.dylib"
+macos.release = "res://bin/libaimtrainer.macos.template_release.dylib"
