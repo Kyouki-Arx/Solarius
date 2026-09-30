@@ -103,7 +103,8 @@ self-contained folder — extract it anywhere and run `Solarius.exe`.
 Windows and Linux are built for both x86_64 and x86_32. Godot 4 still ships
 32-bit desktop export templates, so both architectures are available. What was
 dropped in 4.0 is 32-bit **ARM** (`arm32`) Windows, so `arm64` has no 32-bit
-counterpart.
+counterpart. macOS ships as a single universal (Intel + Apple Silicon) app,
+because that is the only macOS template Godot 4.3 provides.
 
 An exported game must be built on its target OS, because Godot's export
 templates are prebuilt binaries rather than cross-compilers. The source is

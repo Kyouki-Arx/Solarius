@@ -128,13 +128,20 @@ workflow `.github/workflows/build.yml` automates.
 
 ### macOS specifics
 
+- Godot 4.3 ships a **single** macOS export template (`macos.zip`), which is
+  universal. There is no `godot_macos_release.x86_64`, so the export preset
+  must use `binary_format/architecture="universal"` and the dylib must be built
+  with `arch=universal` to match. Exporting for x86_64 alone fails with
+  "Requested template binary ... not found".
+- Universal and arm64 exports additionally require
+  `textures/vram_compression/import_etc2_astc=true` in `project.godot`;
+  without it the export aborts before writing anything.
 - Godot can produce macOS binaries only from macOS, and they must be code-signed
   and notarised to run on other machines without a Gatekeeper override.
 - An unsigned build can be opened locally with
   `xattr -dr com.apple.quarantine Solarius.app`.
-- Building a universal (Intel + Apple Silicon) binary requires both
-  architectures' export templates and is best driven from the editor's export
-  dialog.
+- A bundle identifier (`application/bundle_identifier`) is required or the
+  export refuses to run.
 
 ### Windows specifics
 
