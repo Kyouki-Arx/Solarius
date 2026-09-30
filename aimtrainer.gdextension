@@ -20,5 +20,7 @@ linux.release.x86_64 = "res://bin/libaimtrainer.linux.template_release.x86_64.so
 linux.debug.x86_32 = "res://bin/libaimtrainer.linux.template_debug.x86_32.so"
 linux.release.x86_32 = "res://bin/libaimtrainer.linux.template_release.x86_32.so"
 
-macos.debug = "res://bin/libaimtrainer.macos.template_debug.dylib"
-macos.release = "res://bin/libaimtrainer.macos.template_release.dylib"
+macos.debug.x86_64 = "res://bin/libaimtrainer.macos.template_debug.x86_64.dylib"
+macos.release.x86_64 = "res://bin/libaimtrainer.macos.template_release.x86_64.dylib"
+macos.debug.arm64 = "res://bin/libaimtrainer.macos.template_debug.arm64.dylib"
+macos.release.arm64 = "res://bin/libaimtrainer.macos.template_release.arm64.dylib"
