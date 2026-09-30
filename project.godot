@@ -15,3 +15,10 @@ window/stretch/mode="disabled"
 [input_devices]
 
 pointing/emulate_touch_from_mouse=false
+
+[rendering]
+
+; Required to export for macOS universal/arm64, which is the only macOS template
+; Godot 4.3 ships. Without it the export aborts with "Cannot export for
+; universal or arm64 if ETC2 ASTC texture format is disabled".
+textures/vram_compression/import_etc2_astc=true
