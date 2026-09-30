@@ -92,23 +92,24 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          # The runner image ships its own 64-bit MinGW at C:\mingw64 and it wins
-          # over msys2's toolchain on PATH, so SCons gets pointed straight at the
-          # i686 binaries. The default g++ staying x86_64 is the whole reason for
-          # the override, so verify the compiler SCons will actually call.
-          i686_gxx=/c/msys64/mingw32/bin/g++.exe
-          {
-            echo "i686_gxx=$i686_gxx"
-            ls -l "$i686_gxx" || true
-            "$i686_gxx" -dumpmachine || true
-          } 2>&1
-          test -x "$i686_gxx"
+          # This image already has a 64-bit MinGW at C:\mingw64 which wins on
+          # PATH, and setup-msys2 does not necessarily install to C:\msys64, so
+          # locate the i686 toolchain rather than assuming a path.
+          i686_gxx="$(ls -1 /c/msys64/mingw32/bin/g++.exe \
+                          /c/msys64/mingw32/bin/g++ 2>/dev/null | head -1 || true)"
+          if [ -z "$i686_gxx" ]; then
+            i686_gxx="$(find /c -maxdepth 5 -path '*/mingw32/bin/g++' -print -quit 2>/dev/null || true)"
+          fi
+          echo "i686 g++: $i686_gxx"
+          test -n "$i686_gxx"
+          "$i686_gxx" -dumpmachine
           test "$("$i686_gxx" -dumpmachine)" = "i686-w64-mingw32"
-          scons platform=windows target=template_release arch=x86_32 use_mingw=yes \
-            CC=/c/msys64/mingw32/bin/gcc.exe \
-            CXX="$i686_gxx" \
-            LINK="$i686_gxx" \
-            -j4 2>&1 | tail -40
+          # PATH must prefer it, because godot-cpp calls mingw.generate() on
+          # win32, which re-resolves CC/CXX from PATH and ignores scons' own.
+          i686_bin="$(dirname "$i686_gxx")"
+          export PATH="$i686_bin:$PATH"
+          command -v g++
+          scons platform=windows target=template_release arch=x86_32 use_mingw=yes -j4
           test -f "bin/${{ matrix.gdext_lib }}"
 
       - name: Build GDExtension library
