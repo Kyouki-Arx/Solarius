@@ -5,7 +5,7 @@ A 2D aim trainer built as a Godot 4.3 GDExtension. All gameplay logic is C++
 
 You aim a **laser** that leaves the centre of the screen, passes through your
 cursor and keeps going. A click resolves against the nearest target the beam
-actually crosses — not against whatever the cursor happens to sit on.
+actually crosses - not against whatever the cursor happens to sit on.
 
 ## Gameplay
 
@@ -35,8 +35,8 @@ mouse sensitivity and `cl_mouse_max_distance`. Settings persist to
 | Key | Action |
 | --- | --- |
 | Mouse | Aim the laser |
-| `LMB` | Shoot — scores white targets |
-| `RMB` (hold) | Charge — scores gray targets on release |
+| `LMB` | Shoot - scores white targets |
+| `RMB` (hold) | Charge - scores gray targets on release |
 | `R` | Reset the session |
 | `ESC` | Results screen |
 | `TAB` | Settings |
@@ -80,7 +80,7 @@ godot --path .          # or: tools\run.bat  on Windows
 The editor build of Godot reports the features `debug` and `editor`, never
 `template_release`, and GDExtension library selection is driven by those feature
 strings. A project that lists the release DLL under `windows.release.x86_64`
-therefore cannot load it from an editor binary — the optimised library is
+therefore cannot load it from an editor binary - the optimised library is
 unreachable and the editor silently uses the debug one.
 
 The shipped `Solarius.exe` does not have this problem: an exported build reports
@@ -123,8 +123,8 @@ portable; build it on the target OS with the commands above.
 
 ## Tests
 
-`visual_check.gd` drives the real input path — it pushes synthetic mouse events
-through the engine rather than calling internals — and asserts 149 checks, then
+`visual_check.gd` drives the real input path - it pushes synthetic mouse events
+through the engine rather than calling internals - and asserts 149 checks, then
 writes PNGs of each state to `user://`.
 
 ```bash
@@ -152,4 +152,4 @@ The cursor handling in `src/ddnet_input.*` re-implements DDNet's model
 ## License
 
 No license file is present yet. Until one is added the code is
-all-rights-reserved by default — add a license before accepting contributions.
+all-rights-reserved by default - add a license before accepting contributions.
