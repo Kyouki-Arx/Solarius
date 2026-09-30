@@ -105,7 +105,7 @@ jobs:
         run: |
           set -euo pipefail
           case "${{ matrix.artifact }}" in
-            solarius-windows-x86_64) scons platform=windows target=template_release -j4 ;;
+            solarius-windows-x86_64) scons platform=windows target=template_release use_mingw=yes -j4 ;;
             solarius-linux-x86_64)   scons platform=linux   target=template_release -j4 ;;
             solarius-macos-x86_64)   scons platform=macos   target=template_release -j4 ;;
             *) echo "unknown artifact ${{ matrix.artifact }}"; exit 1 ;;

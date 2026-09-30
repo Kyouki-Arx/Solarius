@@ -35,9 +35,9 @@ pip install scons
 ## 3. Build the library
 
 ```bash
-# Windows
-scons platform=windows target=template_release -j8
-scons platform=windows target=template_debug   -j8
+# Windows (use_mingw=yes is required when MSVC is installed, see Platform notes)
+scons platform=windows target=template_release use_mingw=yes -j8
+scons platform=windows target=template_debug   use_mingw=yes -j8
 
 # 32-bit (needs an i686-capable toolchain, see Platform notes)
 scons platform=windows target=template_release arch=x86_32 -j8
@@ -137,6 +137,16 @@ workflow `.github/workflows/build.yml` automates.
   dialog.
 
 ### Windows specifics
+
+- godot-cpp picks **MSVC** over MinGW whenever a Visual Studio compiler is
+  present, and MSVC builds with `/WX` (warnings are errors). On a machine that
+  has both, a plain `scons platform=windows` therefore fails at link time on
+  the MinGW-only flags this project passes. Pass `use_mingw=yes` to force
+  MinGW, which is the toolchain the export templates expect:
+
+  ```bash
+  scons platform=windows target=template_release use_mingw=yes -j8
+  ```
 
 - The MinGW toolchain used here must match the templates' expectations; the
   official `mingw-w64-x86_64-gcc` from MSYS2 works.
