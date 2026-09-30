@@ -92,17 +92,18 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          # The runner image ships its own 64-bit MinGW at C:\mingw64, and that
-          # wins over msys2's toolchain no matter how PATH is prepended here.
-          # So point SCons straight at the i686 binaries instead, and fail loudly
-          # if the 64-bit one is what would have been used.
-          if g++ -dumpmachine | grep -qv i686; then
-            echo "unexpected default toolchain: $(g++ -dumpmachine)"; exit 1
-          fi
+          # The runner image ships its own 64-bit MinGW at C:\mingw64 and it wins
+          # over msys2's toolchain on PATH, so SCons gets pointed straight at the
+          # i686 binaries. The default g++ staying x86_64 is the whole reason for
+          # the override, so verify the compiler SCons will actually call.
+          i686_gxx=/c/msys64/mingw32/bin/g++.exe
+          test -x "$i686_gxx"
+          "$i686_gxx" -dumpmachine
+          test "$("$i686_gxx" -dumpmachine)" = "i686-w64-mingw32"
           scons platform=windows target=template_release arch=x86_32 use_mingw=yes \
             CC=/c/msys64/mingw32/bin/gcc.exe \
-            CXX=/c/msys64/mingw32/bin/g++.exe \
-            LINK=/c/msys64/mingw32/bin/g++.exe \
+            CXX="$i686_gxx" \
+            LINK="$i686_gxx" \
             -j4
           test -f "bin/${{ matrix.gdext_lib }}"
 
