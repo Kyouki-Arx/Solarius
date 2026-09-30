@@ -85,32 +85,29 @@ jobs:
 
       - name: Build 32-bit GDExtension library
         if: matrix.artifact == 'solarius-windows-x86_32'
-        uses: msys2/setup-msys2@v2
-        with:
-          msystem: MINGW32
-          update: true
-          install: mingw-w64-i686-gcc
-
-      - name: Compile 32-bit library
-        if: matrix.artifact == 'solarius-windows-x86_32'
         shell: bash
         run: |
           set -euo pipefail
-          # This image already has a 64-bit MinGW at C:\mingw64 which wins on
-          # PATH, and setup-msys2 does not install to C:\msys64 by default, so
-          # find the i686 toolchain wherever it actually landed.
-          i686_gxx="$(find / -maxdepth 6 -type f -name 'g++.exe' -path '*mingw32*' \
-                       -print -quit 2>/dev/null || true)"
-          echo "i686 g++: ${i686_gxx:-<not found>}"
-          test -n "$i686_gxx"
-          "$i686_gxx" -dumpmachine
+          # The image's own MinGW is 64-bit only (C:\mingw64), so a 32-bit
+          # build needs a real i686 toolchain with its own 32-bit CRT import
+          # libraries. msys2's MINGW32 is being phased out and does not land
+          # where a later step can find it, so unpack a standalone one instead.
+          url="https://github.com/brechtsanders/winlibs_mingw/releases/download/16.2.0posix-14.0.0-msvcrt-r2/winlibs-i686-posix-dwarf-gcc-16.2.0-mingw-w64msvcrt-14.0.0-r2.zip"
+          root="$RUNNER_TEMP/i686"
+          if [ ! -x "$root/mingw32/bin/g++.exe" ]; then
+            curl -fsSL -o "$RUNNER_TEMP/i686.zip" "$url"
+            mkdir -p "$root"
+            unzip -q "$RUNNER_TEMP/i686.zip" -d "$root"
+          fi
+          i686_gxx="$root/mingw32/bin/g++.exe"
+          echo "i686 g++: $i686_gxx"
+          test -x "$i686_gxx"
           test "$("$i686_gxx" -dumpmachine)" = "i686-w64-mingw32"
-          # PATH must prefer it, because godot-cpp calls mingw.generate() on
-          # win32, which re-resolves CC/CXX from PATH and ignores scons' own.
-          i686_bin="$(dirname "$i686_gxx")"
-          export PATH="$(cygpath -w "$i686_bin"):$PATH"
+          # PATH has to prefer it: on win32 godot-cpp calls mingw.generate(),
+          # which re-resolves CC/CXX from PATH and ignores whatever scons' own
+          # CC=/CXX= arguments say.
+          export PATH="$(cygpath -w "$root/mingw32/bin"):$PATH"
           command -v g++
-          g++ -dumpmachine
           test "$(g++ -dumpmachine)" = "i686-w64-mingw32"
           scons platform=windows target=template_release arch=x86_32 use_mingw=yes -j4
           test -f "bin/${{ matrix.gdext_lib }}"
