@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    name: ${{ matrix.os }}
+    name: ${{ matrix.artifact }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -16,12 +16,27 @@ jobs:
         include:
           - os: windows-latest
             artifact: solarius-windows-x86_64
+            preset: Windows Desktop
+            gdext_lib: libaimtrainer.windows.template_release.x86_64.dll
           - os: windows-latest
             artifact: solarius-windows-x86_32
+            preset: Windows Desktop 32-bit
+            gdext_lib: libaimtrainer.windows.template_release.x86_32.dll
           - os: ubuntu-latest
             artifact: solarius-linux-x86_64
+            preset: Linux/X11
+            gdext_lib: libaimtrainer.linux.template_release.x86_64.so
           - os: macos-latest
             artifact: solarius-macos-x86_64
+            preset: macOS
+            gdext_lib: libaimtrainer.macos.template_release.dylib
+
+    defaults:
+      run:
+        shell: bash
+
+    env:
+      GODOT_VERSION: "4.3"
 
     steps:
       - uses: actions/checkout@v4
@@ -31,6 +46,7 @@ jobs:
 
       - name: Install Linux build deps
         if: runner.os == 'Linux'
+        shell: bash
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential
@@ -41,23 +57,39 @@ jobs:
           python-version: "3.x"
 
       - name: Install SCons
+        shell: bash
         run: python -m pip install scons
 
-      - name: Install Godot 4.3 export templates
+      - name: Cache export templates
+        id: templates
+        shell: bash
         run: |
-          curl -sSL -o templates.tpz \
-            https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_export_templates.tpz
-          mkdir -p templates
-          unzip -q templates.tpz -d templates
-          if [ "$RUNNER_OS" = "Windows" ]; then
-            mv templates/templates "${{ env.APPDATA }}\\Godot\\export_templates\\4.3.stable"
-          elif [ "$RUNNER_OS" = "macOS" ]; then
-            mkdir -p "$HOME/Library/Application Support/Godot/export_templates"
-            mv templates/templates "$HOME/Library/Application Support/Godot/export_templates/4.3.stable"
-          else
-            mkdir -p "$HOME/.local/share/godot/export_templates"
-            mv templates/templates "$HOME/.local/share/godot/export_templates/4.3.stable"
+          set -euo pipefail
+          cache="$RUNNER_TEMP/godot-templates/godot-$GODOT_VERSION-stable"
+          if [ ! -d "$cache" ]; then
+            mkdir -p "$RUNNER_TEMP/godot-templates"
+            curl -fsSL -o "$RUNNER_TEMP/templates.tpz" \
+              "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+            unzip -q "$RUNNER_TEMP/templates.tpz" -d "$RUNNER_TEMP/godot-templates"
           fi
+          python - "$cache" <<'PY'
+          import os, pathlib, shutil, sys
+          src = pathlib.Path(sys.argv[1])
+          if sys.platform == "win32":
+              dest = pathlib.Path(os.environ["APPDATA"]) / "Godot" / "export_templates"
+          elif sys.platform == "darwin":
+              dest = pathlib.Path.home() / "Library/Application Support/Godot/export_templates"
+          else:
+              dest = pathlib.Path.home() / ".local/share/godot/export_templates"
+          target = dest / f"{os.environ['GODOT_VERSION']}.stable"
+          target.parent.mkdir(parents=True, exist_ok=True)
+          if target.exists():
+              shutil.rmtree(target)
+          shutil.copytree(src, target)
+          print("templates installed to", target)
+          print("windows x86_32 template present:",
+                (target / "windows_release_x86_32.exe").exists())
+          PY
 
       - name: Install Godot 4.3
         uses: chickensoft-games/setup-godot@v2
@@ -66,74 +98,79 @@ jobs:
           use-dotnet: false
           use-mono: false
 
-      - name: Install i686 MinGW (32-bit Windows)
+      - name: Build 32-bit GDExtension library
         if: matrix.artifact == 'solarius-windows-x86_32'
         uses: msys2/setup-msys2@v2
         with:
           msystem: MINGW32
           update: true
-          install: >-
-            mingw-w64-i686-gcc
-            mingw-w64-i686-python
-            python-pip
+          install: mingw-w64-i686-gcc
 
-      - name: Build 32-bit GDExtension library
+      - name: Compile 32-bit library
         if: matrix.artifact == 'solarius-windows-x86_32'
         shell: msys2 {0}
         run: |
-          pacman -S --noconfirm --needed mingw-w64-i686-python-pip
-          C:/msys64/mingw32/bin/python -m pip install scons
+          pacman -S --noconfirm --needed mingw-w64-i686-python
+          C:/msys64/mingw32/bin/python -m pip install --quiet scons
           cd "$GITHUB_WORKSPACE"
           C:/msys64/mingw32/bin/scons \
             platform=windows target=template_release arch=x86_32 -j4
 
       - name: Build GDExtension library
         if: matrix.artifact != 'solarius-windows-x86_32'
+        shell: bash
         run: |
+          set -euo pipefail
           case "${{ matrix.artifact }}" in
             solarius-windows-x86_64) scons platform=windows target=template_release -j4 ;;
             solarius-linux-x86_64)   scons platform=linux   target=template_release -j4 ;;
             solarius-macos-x86_64)   scons platform=macos   target=template_release -j4 ;;
+            *) echo "unknown artifact ${{ matrix.artifact }}"; exit 1 ;;
           esac
+          test -f "bin/${{ matrix.gdext_lib }}" || { echo "missing GDExtension library bin/${{ matrix.gdext_lib }}"; exit 1; }
 
       - name: Export standalone build
+        shell: bash
         run: |
-          case "${{ matrix.artifact }}" in
-            solarius-windows-x86_64) godot --headless --path . --export-release "Windows Desktop"        build/Solarius.exe ;;
-            solarius-windows-x86_32) godot --headless --path . --export-release "Windows Desktop 32-bit" build/Solarius-x86_32.exe ;;
-            solarius-linux-x86_64)   godot --headless --path . --export-release "Linux/X11"             build/Solarius.x86_64 ;;
-            solarius-macos-x86_64)   godot --headless --path . --export-release "macOS"                 build/Solarius.zip ;;
-          esac
+          set -euo pipefail
+          mkdir -p build
+          godot --headless --path . --export-release "${{ matrix.preset }}" "build/${{ matrix.artifact }}"
+          ls -la build/
 
       - name: Package
         shell: bash
         run: |
-          mkdir -p dist
-          case "${{ matrix.artifact }}" in
-            solarius-windows-x86_64)
-              cp build/Solarius.exe build/*.pck dist/ 2>/dev/null || true
-              (cd dist && zip -r -9 "${{ matrix.artifact }}.zip" .)
-              ;;
-            solarius-windows-x86_32)
-              cp build/Solarius-x86_32.exe build/*.pck dist/ 2>/dev/null || true
-              (cd dist && zip -r -9 "${{ matrix.artifact }}.zip" .)
-              ;;
-            solarius-linux-x86_64)
-              cp build/Solarius.x86_64 build/*.pck dist/ 2>/dev/null || true
-              tar -czf dist/"${{ matrix.artifact }}.tar.gz" -C dist Solarius.x86_64 $(cd dist && ls *.pck 2>/dev/null)
-              rm -f dist/*.pck dist/Solarius.x86_64
-              ;;
-            solarius-macos-x86_64)
-              cp build/Solarius.zip dist/
-              (cd dist && zip -r -9 "${{ matrix.artifact }}-bundle.zip" Solarius.zip)
-              ;;
+          set -euo pipefail
+          rm -rf dist && mkdir -p dist
+          cd build
+          case "${{ runner.os }}/${{ matrix.artifact }}" in
+            Windows/solarius-windows-x86_64)
+              zip -r -9 "../dist/${{ matrix.artifact }}.zip" . ;;
+            Windows/solarius-windows-x86_32)
+              zip -r -9 "../dist/${{ matrix.artifact }}.zip" . ;;
+            Linux/solarius-linux-x86_64)
+              tar -czf "../dist/${{ matrix.artifact }}.tar.gz" \
+                --transform 's,^\.,Solarius,' . ;;
+            macOS/solarius-macos-x86_64)
+              zip -r -9 "../dist/${{ matrix.artifact }}.zip" . ;;
           esac
+          cd ..
           ls -la dist/
+
+      - name: Verify artifact is non-empty
+        shell: bash
+        run: |
+          set -euo pipefail
+          count=$(ls -1 dist | wc -l)
+          test "$count" -ge 1 || { echo "no artifact produced"; exit 1; }
+          find dist -type f -size -1k -print -exec false {} \; || true
+          du -sh dist/*
 
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact }}
           path: dist/
+          if-no-files-found: error
 
   release:
     name: publish release
@@ -148,8 +185,7 @@ jobs:
           path: artifacts
           merge-multiple: true
 
-      - name: Create GitHub release
-        uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v2
         with:
           files: artifacts/*
           generate_release_notes: true
@@ -161,8 +197,14 @@ jobs:
             | Windows | x86_64 | `solarius-windows-x86_64.zip` |
             | Windows | x86_32 | `solarius-windows-x86_32.zip` |
             | Linux | x86_64 | `solarius-linux-x86_64.tar.gz` |
-            | macOS | x86_64 | `solarius-macos-x86_64-bundle.zip` |
+            | macOS | x86_64 | `solarius-macos-x86_64.zip` |
 
-            Windows packages are self-contained: extract and run `Solarius.exe`.
-            The macOS build is unsigned, so on first launch use
-            `xattr -dr com.apple.quarantine Solarius.app`.
+            Windows and Linux packages are self-contained: extract the archive and
+            run `Solarius.exe` (Windows) or `./Solarius-linux-x86_64` (Linux).
+
+            The macOS build is unsigned. On first launch, allow it through
+            Gatekeeper with:
+
+            ```
+            xattr -dr com.apple.quarantine Solarius.app
+            ```
