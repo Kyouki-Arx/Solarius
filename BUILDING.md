@@ -40,7 +40,7 @@ scons platform=windows target=template_release use_mingw=yes -j8
 scons platform=windows target=template_debug   use_mingw=yes -j8
 
 # 32-bit (needs an i686-capable toolchain, see Platform notes)
-scons platform=windows target=template_release arch=x86_32 -j8
+scons platform=windows target=template_release arch=x86_32 use_mingw=yes -j8
 scons platform=linux   target=template_release arch=x86_32 -j8
 
 # Linux

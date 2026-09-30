@@ -98,7 +98,7 @@ jobs:
           # scons resolvable, which it is not from inside msys2.
           export PATH="/c/msys64/mingw32/bin:$PATH"
           g++ -dumpmachine
-          scons platform=windows target=template_release arch=x86_32 -j4
+          scons platform=windows target=template_release arch=x86_32 use_mingw=yes -j4
           test -f "bin/${{ matrix.gdext_lib }}"
 
       - name: Build GDExtension library
