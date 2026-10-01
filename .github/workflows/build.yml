@@ -192,20 +192,22 @@ jobs:
           files: artifacts/*
           generate_release_notes: true
           body: |
-            Standalone Godot 4.3 builds of Solarius.
+            Standalone Godot 4.3 builds of Solarius. The Godot runtime is bundled,
+            so nothing needs to be installed.
 
-            | Platform | Arch | File |
-            | --- | --- | --- |
-            | Windows | x86_64 | `solarius-windows-x86_64.zip` |
-            | Windows | x86_32 | `solarius-windows-x86_32.zip` |
-            | Linux | x86_64 | `solarius-linux-x86_64.tar.gz` |
-            | macOS | x86_64 | `solarius-macos-x86_64.zip` |
+            | Platform | Arch | File | Run |
+            | --- | --- | --- | --- |
+            | Windows | x86_64 | `solarius-windows-x86_64.zip` | `Solarius.exe` |
+            | Windows | x86_32 | `solarius-windows-x86_32.zip` | `Solarius.exe` |
+            | Linux | x86_64 | `solarius-linux-x86_64.tar.gz` | `./solarius.x86_64` |
+            | macOS | universal | `solarius-macos-universal.zip` | `Solarius.app` |
 
-            Windows and Linux packages are self-contained: extract the archive and
-            run `Solarius.exe` (Windows) or `./Solarius-linux-x86_64` (Linux).
+            Windows packages are self-contained folders: extract the archive and
+            run `Solarius.exe`. The Linux tarball unpacks to a `Solarius/`
+            directory.
 
-            The macOS build is unsigned. On first launch, allow it through
-            Gatekeeper with:
+            The macOS build is unsigned and unnotarised, so Gatekeeper blocks it
+            on first launch. Allow it with:
 
             ```
             xattr -dr com.apple.quarantine Solarius.app
