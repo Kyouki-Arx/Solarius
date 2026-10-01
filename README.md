@@ -15,7 +15,7 @@ actually crosses - not against whatever the cursor happens to sit on.
   wins.
 - **Two target kinds.** White targets are scored with `LMB`; gray targets must be
   held with `RMB` for a required charge time and released inside a tolerance
-  window. The wrong button is a miss and nothing more — the target stays
+  window. The wrong button is a miss and nothing more - the target stays
   playable, so one slip is not punished twice.
 - **Anywhere on screen.** Targets spawn uniformly across the whole visible
   playfield, well outside the cursor's movement circle, because the laser only
